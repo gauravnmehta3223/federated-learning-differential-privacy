@@ -47,8 +47,7 @@ The dataset contains 71,026 rows of patient data.
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd <repository-name>
+git clone https://github.com/Gmehta604/Differential-Privacy-Federated-Learning.git
 ```
 
 2. Install the required packages:
