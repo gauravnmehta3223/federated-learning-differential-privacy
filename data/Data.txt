@@ -1,0 +1,40 @@
+MIMIC-IV (Medical Information Mart for Intensive Care IV) Dataset
+
+Description:
+MIMIC-IV is a large, freely-available database comprising deidentified health-related data associated with over 250,000 patients who stayed in critical care units of the Beth Israel Deaconess Medical Center between 2008 and 2019. It includes demographics, vital signs, laboratory tests, medications, and more.
+
+Key Features:
+1. Comprehensive clinical data from ICU patients
+2. High temporal resolution (data recorded every few minutes)
+3. Includes both structured and unstructured data
+4. Covers multiple years of patient care
+5. Includes various types of clinical measurements and interventions
+
+Dataset Components:
+- Core: Contains basic patient information and hospital stays
+- Hosp: Contains hospital-level data
+- Icu: Contains ICU-specific data
+- Ed: Contains emergency department data
+- Note: Contains clinical notes
+
+Data Types Included:
+- Vital signs (heart rate, blood pressure, temperature, etc.)
+- Laboratory measurements
+- Medications
+- Procedures
+- Clinical notes
+- Hospital length of stay
+- Mortality outcomes
+
+Access Requirements:
+1. Complete the CITI "Data or Specimens Only Research" course
+2. Sign the data use agreement
+3. Request access through PhysioNet
+
+Dataset Link:
+https://physionet.org/content/mimiciv/2.2/
+
+Citation:
+Johnson, A., Bulgarelli, L., Pollard, T., Horng, S., Celi, L. A., & Mark, R. (2023). MIMIC-IV (version 2.2). PhysioNet. https://doi.org/10.13026/6mm1-ek67
+
+Note: Access to MIMIC-IV requires completion of the CITI training and approval of a data use agreement. The dataset is not publicly available without these prerequisites. 
