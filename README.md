@@ -1,102 +1,66 @@
-﻿# Federated Learning with Differential Privacy
+﻿# Differential Privacy in Federated Learning on MIMIC-IV
 
-This project implements a federated learning system with differential privacy using the Flower library. The system is designed to train a neural network model on distributed healthcare data while preserving privacy through differential privacy mechanisms.
+This project trains an in-hospital mortality model across simulated hospital "clients" without pooling patient data. It then measures how much accuracy is lost when **differential privacy** noise is added to each client's updates.
 
-## Project Overview
+This was a team project for MA 591 (April 2025) by Shrawani Gulhane, Gaurav Mehta and Vasudev Menon. The full write-up is in [`Final_Report.pdf`](Final_Report.pdf).
 
-The project implements a client-server architecture where:
-- A central server coordinates the federated learning process
-- Multiple clients (10 in this implementation) train the model on their local data
-- Differential privacy is applied to protect sensitive information during the training process
+## Results
 
-## Dataset
+| Setup | Final-round accuracy |
+| --- | --- |
+| Centralized neural network (no federation) | 68.6% |
+| Federated, 5 clients with random splits, no privacy | 68.4% |
+| Federated, 7 clients split by demographic group, no privacy (baseline run in the sweep notebook) | 68.4% |
+| Same 7 clients with local differential privacy, ε = 0.1 to 2 | 47–52% |
+| Same 7 clients with local differential privacy, ε = 10 | 57.9% |
+| Same 7 clients with local differential privacy, ε = 50 to 100 | 68.9–69.0% |
 
-The project uses a healthcare dataset containing the following features:
-- ABP Diastolic
-- ABP Systolic
-- Glucose
-- Heart Rate
-- Respiratory Rate
-- Temperature (°F)
-- hospital_expire_flag (target variable)
+**Main finding:** strong privacy (small ε) pushes the model to chance level on this task. At ε ≥ 50 it matches the non-private model. Accuracy is weighted by each client's number of validation examples. The task is a balanced binary prediction, so 50% is chance.
 
-The dataset contains 71,026 rows of patient data.
+![Accuracy as a function of the privacy budget](images/privacy_vs_accuracy.png)
 
-## Project Structure
+![Accuracy of each client across 25 federated rounds](images/client_accuracy_by_round.png)
 
-```
-.
-├── data/
-│   └── merged_data.csv
-├── server.py
-├── client.py
-├── start_clients.sh
-├── requirements.txt
-└── README.md
-```
+## Approach
 
-## Requirements
+1. **Data:** from MIMIC-IV (see [`data/Data.txt`](data/Data.txt)), we took the patient-level mean of six vital signs: diastolic and systolic blood pressure, glucose, heart rate, respiratory rate and temperature. The label is whether the patient died in hospital.
+2. **Cleaning:**
+   - Removed values below the 1st and above the 99th percentile.
+   - Dropped rows with missing values.
+   - Undersampled the majority class. Only about 9% of patients died, and undersampling produced a balanced set of 4,726 patients.
+3. **Model:** a small PyTorch network (6 → 4 → 2 → 1) trained with Adam and binary cross-entropy.
+4. **Federation:** a [Flower](https://flower.ai/) simulation using FedAvg over 25 rounds, with 10 local epochs per round.
+   - Clients were split either randomly (5 clients) or by grouped race (7 clients of very different sizes), to imitate hospitals with different patient populations.
+5. **Privacy:** Flower's `LocalDpMod` clips each client's update (clipping norm 5.0) and adds noise. We swept ε from 0.1 to 100 with δ = 1e-5.
+   - An earlier experiment (`ddp.ipynb`) used Opacus DP-SGD with a noise multiplier of 0.5.
 
-- Python 3.7+
-- Flower (flwr)
-- TensorFlow
-- Pandas
-- NumPy
+## Repository contents
 
-## Installation
+| Path | What it is |
+| --- | --- |
+| `Notebooks/federated_learning.ipynb` | Federated learning with 5 random clients, no privacy |
+| `Notebooks/federated_learning_race_split.ipynb` | Federated learning with 7 clients split by demographic group |
+| `Notebooks/ddp_federated_learning_DemographicGroup_split.ipynb` | The privacy budget sweep shown above |
+| `Notebooks/ddp.ipynb` | Opacus DP-SGD experiment |
+| `Notebooks/model_tuning.ipynb` | Centralized baseline |
+| `scripts/` | MIMIC-IV extraction and cleaning |
+| `src/` | An early standalone Flower client and server. The notebooks are the final version. |
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Gmehta604/Differential-Privacy-Federated-Learning.git
-```
+## Run it
 
-2. Install the required packages:
+1. Get credentialed access to MIMIC-IV on PhysioNet and build the merged CSV files (see [`data/Data.txt`](data/Data.txt)).
+2. Open a notebook in Google Colab. A GPU is optional.
+3. Set `DEFAULT_PATH` to the folder that holds the CSV files.
+4. Run all cells.
+
+To run the notebooks locally, install the dependencies first:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
+No patient data is included in this repository.
 
-1. Start the server:
-```bash
-python server.py
-```
+## Limitations
 
-2. Start the clients (in a new terminal):
-```bash
-./start_clients.sh
-```
-
-## Implementation Details
-
-### Server
-- Coordinates the federated learning process
-- Aggregates model updates from clients
-- Implements differential privacy mechanisms
-
-### Clients
-- Each client receives a portion of the dataset
-- Trains the model locally
-- Applies differential privacy to model updates
-- Sends encrypted updates to the server
-
-### Differential Privacy
-The implementation includes differential privacy mechanisms to protect sensitive data during the federated learning process.
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Flower library for federated learning implementation
-- TensorFlow for neural network implementation
-- Contributors and maintainers of the project
+- Each run uses a single random seed. The small clients' accuracy swings a lot from round to round.
+- The model is deliberately small and uses only six features, so absolute accuracy is modest. The point of the project is the privacy/accuracy trade-off, not the best mortality model.
